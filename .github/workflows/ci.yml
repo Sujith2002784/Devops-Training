@@ -20,16 +20,21 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    - name:  Find solution file
+      id:  find-sln
+      run:  |
+        SOLUTION=$(find . -name "*.sln"|head -n 1)
+        echo "solution=$SOLUTION" >> $GITHUB_ENV
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore "$solution"
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build "$solution" --configuration Release
     - name: Test
-      run: dotnet test --no-build --verbosity normal
-    - name:  Publish
-      run:  dotnet Publish -c Release -o ./Publish
-    - name:  Upload Artifacts
-      uses:  actions/upload-artifact@v4
+      run: dotnet test "$solution"  --configuration Release --no-build --verbosity normal --logger  "trx;LogFileName=test_results.trx"
+    - name:  Upload Test Results
+      if:  always()
+      uses:  actions/upload-artifacts@v4
       with:
-        name:  dotnet-publish
-        path:  ./publish
+        name:  test-results
+        path:  '**/TestResults/*.trx'
+   
